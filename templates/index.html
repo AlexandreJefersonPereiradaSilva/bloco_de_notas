@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta nome="viewpow" content="width=device-width, inicial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h1>Bloco de Notas</h1>
+    <ul>
+        <li><a href="/">inicio</a></li>
+        <li><a href="/notas">Notas</a></li>
+    
+    </ul>
+    <form action="/notas" method="post">
+        <input type="text" name="anotacao" id="">
+        <input type="submit">
+    </form>
+    <ul>
+        <li>
+            {% for item in data %}
+                {{item}}
+            {% endfor %}
+        </li>
+    </ul>
+    </body>
+    </html>
+
