@@ -1,65 +1,36 @@
-from flask import Flask, request, render_template, jsonify
-import sqlite3
-
+from flask import Flask, request, json, jsonify, render_template
+from main import ler_dados, atualizar_nota, criar_novo_usuario_e_nota, deletar_usuario
+from tabelas import Nota, Usuario
 app = Flask(__name__)
 
-BANCO_DE_DADOS = "bloco_de_notas.db"
-
-def get_db():
-    db = sqlite3.connect(BANCO_DE_DADOS)
-    db.row_factory = sqlite3.Row
-    return db
-
-def init_db():
-    db = get_db()
-    with app.open_resource('schema.sql', mode='r') as f:
-        db.cursor().executescript(f.read())
-    db.commit()
-
-
-
-
-app.route('/')
+@app.route("/", methods=['GET', 'POST'])
 def index():
-    init_db()
-    return render_template('index.html')
-
-@app.route('/notas', methods=["GET"])
-def get_notas():
-    try:
-        db = get_db()
-        cur = db.cursor()
-        cur.execute('SELECT * FROM anotacoes')
-        dados = cur.fetchall()
-        return render_template("'index.html' data=[dict(row) for row in dados]")
-    except sqlite3.Error as e:
-        return jsonify({'error' : str(e)}), 500
-    finally:
-        cur.close()
-        db.close()
-
-@app.route('/notas', methods= ['POST',"GET"])
-def notas():
-    if request.method=='GET':
-        return get_notas()
+    if request.method == 'GET':
+        resultado = ler_dados()
+        return render_template('index.html',data=resultado)
     elif request.method == 'POST':
-        anotacao = request.form.get('anotacao')
+        data = request.get_data()
+        usuario_e_nota = json.loads(data)
 
-        if not anotacao:
-            return jsonify({'error' : 'Anotação é obrigatório'}), 400
-        try:
-            db = get_db()
-            cur = db.cursor()
-            cur.execute("INSERT INTO anotacoes (texto, data_hora)" +
-                     "VALUES (?, datetime('now'))", (anotacao))
-            db.comit()
-            return render_template('index.html')
-        except sqlite3.Error as e:
-            return jsonify({'error': str(e)}), 500
-        finally:
-            cur.close()
-            db.close()
+        user = Usuario(
+                        nome=usuario_e_nota["usuario"],
+                        email=usuario_e_nota["email"],
+                        senha_hash=usuario_e_nota["senha"])
+        note = Nota(
+                        titulo=usuario_e_nota["titulo"],
+                        conteudo=usuario_e_nota["nota"])
+        criar_novo_usuario_e_nota(user, note)
+        return jsonify({"message": "Usuário e nota criados com sucesso!"}), 201
+    else:
+        return jsonify({'error': 'Pagina não encontrada!'}), 404
 
+@app.route("/api/users", methods=["GET"])
+def api_users():
+    try:
+        data = ler_dados()
+        return jsonify({"success": True, "data": data}), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
-        
-
+if __name__ == "__main__":
+    app.run()
